@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>catt-web</title>
+<style>
+:root {
+  --bg: #f6f6f4; --card: #ffffff; --text: #1c1c1a; --muted: #6b6b66; --line: #e2e2dc;
+  --accent: #2f6fde; --accent-text: #ffffff; --warn-bg: #fff4dc; --warn: #8a5a00;
+  --err-bg: #fde8e6; --err: #a3271b; --ok: #1f8a4c; --chip: #efefea;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141413; --card: #1e1e1c; --text: #ecece8; --muted: #9b9b94; --line: #33332f;
+    --accent: #5b8ff0; --accent-text: #0d0d0c; --warn-bg: #3a2e12; --warn: #f0c46a;
+    --err-bg: #3d1a16; --err: #f29a8f; --ok: #5cc58a; --chip: #2a2a27;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141413; --card: #1e1e1c; --text: #ecece8; --muted: #9b9b94; --line: #33332f;
+  --accent: #5b8ff0; --accent-text: #0d0d0c; --warn-bg: #3a2e12; --warn: #f0c46a;
+  --err-bg: #3d1a16; --err: #f29a8f; --ok: #5cc58a; --chip: #2a2a27;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 12px 16px 48px; }
+header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+header h1 { font-size: 17px; margin: 0 auto 0 0; letter-spacing: .2px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.dot.on { background: var(--ok); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.grow { flex: 1 1 auto; min-width: 0; }
+button, select, input[type=text] { font: inherit; color: var(--text); background: var(--chip);
+  border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; }
+button { cursor: pointer; white-space: nowrap; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+button.big { font-size: 20px; padding: 8px 18px; min-width: 64px; }
+button:disabled { opacity: .45; cursor: default; }
+input[type=text] { width: 100%; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.title { font-weight: 600; font-size: 16px; overflow-wrap: anywhere; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.badge { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--chip); color: var(--muted); }
+.badge.play { color: var(--ok); }
+.times { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+.controls { justify-content: center; margin: 8px 0 4px; }
+.banner { border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; display: none; }
+.banner.show { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.banner.err { background: var(--err-bg); color: var(--err); }
+.banner.info { background: var(--chip); }
+.warn { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 8px 10px; margin: 6px 0; font-size: 14px; }
+nav.tabs { display: flex; gap: 4px; margin-bottom: 8px; overflow-x: auto; }
+nav.tabs button { background: transparent; border-color: transparent; }
+nav.tabs button.on { background: var(--card); border-color: var(--line); font-weight: 600; }
+.tab { display: none; } .tab.on { display: block; }
+.crumbs { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; margin: 4px 0 8px; }
+ul.files { list-style: none; margin: 0; padding: 0; max-height: 46vh; overflow-y: auto; border-top: 1px solid var(--line); }
+ul.files li { padding: 8px 4px; border-bottom: 1px solid var(--line); cursor: pointer; display: flex; gap: 8px; align-items: baseline; }
+ul.files li:hover { background: var(--chip); }
+ul.files li.sel { background: var(--chip); font-weight: 600; }
+ul.files .kind { width: 44px; flex: none; font-size: 11px; text-transform: uppercase; color: var(--muted); }
+ul.files .name { flex: 1; overflow-wrap: anywhere; }
+ul.files .size { font-size: 12px; color: var(--muted); flex: none; }
+.progress { height: 8px; background: var(--chip); border-radius: 99px; overflow: hidden; margin: 6px 0; }
+.progress > div { height: 100%; background: var(--accent); width: 0; transition: width .4s; }
+label.field { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 3px; }
+pre { font-size: 12px; overflow: auto; max-height: 50vh; background: var(--chip); padding: 10px; border-radius: 8px; }
+#toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); max-width: calc(100% - 32px);
+  background: var(--text); color: var(--bg); padding: 9px 14px; border-radius: 8px; font-size: 14px; display: none; z-index: 9; }
+#toast.err { background: var(--err); color: #fff; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>catt-web</h1>
+    <span class="dot" id="dot" title="connection"></span>
+    <select id="devices" aria-label="Device"><option value="">No device</option></select>
+    <button id="scan">Scan</button>
+    <button id="phoneBtn" style="display:none" title="Show a QR code to open this page on a phone">Phone</button>
+  </header>
+
+  <section class="card" id="phoneCard" style="display:none">
+    <div class="row"><b class="grow">Open on your phone</b><button id="phoneClose">Close</button></div>
+    <img id="qrImg" alt="QR code with the phone link" width="232" height="232"
+         style="display:block; margin:10px auto; border-radius:8px; background:#fff">
+    <div class="small muted" style="text-align:center">Scan with the phone camera. The phone must be on the same Wi-Fi.</div>
+    <div class="small" style="text-align:center; overflow-wrap:anywhere; margin-top:6px"><a id="phoneLink"></a></div>
+  </section>
+
+  <div class="banner err" id="errBanner"><span class="grow" id="errText"></span><button id="errClose">Dismiss</button></div>
+  <div class="banner info" id="resumeBanner">
+    <span class="grow" id="resumeText"></span>
+    <button class="primary" id="resumeBtn">Resume</button><button id="resumeDismiss">Dismiss</button>
+  </div>
+
+  <section class="card" id="now">
+    <div class="row"><div class="title grow" id="npTitle">Nothing playing</div><span class="badge" id="npState">IDLE</span></div>
+    <div class="small muted" id="npApp"></div>
+    <input type="range" id="seek" min="0" max="0" step="1" value="0" aria-label="Position">
+    <div class="times"><span id="tCur">0:00</span><span id="tDur">0:00</span></div>
+    <div class="row controls">
+      <button id="bm30" title="Back 30 s">−30</button>
+      <button id="bm10" title="Back 10 s (←)">−10</button>
+      <button class="big primary" id="bToggle" title="Play/pause (space)">▶</button>
+      <button id="bp10" title="Forward 10 s (→)">+10</button>
+      <button id="bp30" title="Forward 30 s">+30</button>
+    </div>
+    <div class="row controls">
+      <button id="bStop">Stop</button>
+      <button id="bSkip" title="Skip to end">Skip</button>
+      <input type="text" id="seekTo" placeholder="hh:mm:ss" style="width:110px" aria-label="Seek to">
+      <button id="bSeekTo">Go</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="bMute" title="Mute (m)">Mute</button>
+      <input type="range" id="vol" min="0" max="100" step="1" class="grow" style="width:auto" aria-label="Volume">
+      <span id="volVal" class="small muted" style="width:34px;text-align:right">–</span>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <span class="small muted">Subtitles</span>
+      <select id="npSubs" class="grow" disabled><option value="">Off</option></select>
+    </div>
+    <div class="small muted" style="margin-top:8px" id="npSleep"></div>
+  </section>
+
+  <nav class="tabs">
+    <button data-tab="files" class="on">Files</button>
+    <button data-tab="web">URL / Web</button>
+    <button data-tab="yt">YouTube</button>
+    <button data-tab="info">Info</button>
+  </nav>
+
+  <section class="card tab on" id="tab-files">
+    <div class="row">
+      <button id="fUp" title="Parent folder">Up</button>
+      <button id="fHome">Downloads</button>
+      <button id="fConv">Converted</button>
+      <button id="fRefresh">Refresh</button>
+    </div>
+    <div class="crumbs" id="fPath"></div>
+    <ul class="files" id="fList"></ul>
+    <div id="detail" style="display:none; margin-top:12px">
+      <div class="title" id="dName"></div>
+      <div class="small muted" id="dInfo"></div>
+      <div id="dWarn"></div>
+      <div id="dConvert" style="display:none">
+        <div class="row"><button id="bConvert">Convert for Chromecast</button>
+          <button id="bCancel" style="display:none">Cancel</button>
+          <span class="small muted" id="cText"></span></div>
+        <div class="progress" id="cBar" style="display:none"><div></div></div>
+      </div>
+      <label class="field" for="dSubs">Subtitles</label>
+      <select id="dSubs" style="width:100%"><option value="">None</option></select>
+      <label class="field" for="dStart">Start at (optional, hh:mm:ss)</label>
+      <div class="row">
+        <input type="text" id="dStart" placeholder="0:00:00" style="width:140px">
+        <button class="primary" id="bCast">Cast</button>
+        <button id="bCastConv" style="display:none" class="primary">Cast converted file</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card tab" id="tab-web">
+    <label class="field" for="uUrl">Video URL (YouTube and other sites through yt-dlp, or a direct media link)</label>
+    <div class="row"><input type="text" id="uUrl" class="grow" style="width:auto" placeholder="https://...">
+      <button class="primary" id="bUrl">Cast</button></div>
+    <label class="small muted"><input type="checkbox" id="uDefault"> Use the default media receiver (not the YouTube app)</label>
+    <label class="field" for="sUrl">Website (DashCast shows the page on the TV)</label>
+    <div class="row"><input type="text" id="sUrl" class="grow" style="width:auto" placeholder="https://...">
+      <button id="bSite">Show</button></div>
+  </section>
+
+  <section class="card tab" id="tab-yt">
+    <div class="small muted" id="ytState">The YouTube queue works only while the YouTube app plays on the TV.</div>
+    <label class="field" for="yUrl">YouTube video URL</label>
+    <input type="text" id="yUrl" placeholder="https://www.youtube.com/watch?v=...">
+    <div class="row" style="margin-top:8px">
+      <button id="yAdd">Add to queue</button><button id="yNext">Play next</button>
+      <button id="yRemove">Remove</button><button id="yClear">Clear queue</button>
+    </div>
+  </section>
+
+  <section class="card tab" id="tab-info">
+    <div class="row">
+      <button id="iRefresh">Device info</button>
+      <button id="iSave">Save state</button>
+      <button id="iRestore">Restore state</button>
+    </div>
+    <div class="small muted" id="iSaved" style="margin-top:6px"></div>
+    <pre id="iOut">Press "Device info".</pre>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// The access token comes from the link (?t=...). Keep it in this browser and remove it from the address bar.
+const TOKEN = (() => {
+  const q = new URLSearchParams(location.search).get("t");
+  try {
+    if (q) localStorage.setItem("cattweb.token", q);
+    return q || localStorage.getItem("cattweb.token") || "";
+  } catch (e) { return q || ""; }
+})();
+if (location.search) history.replaceState(null, "", location.pathname);
+const NO_TOKEN_MSG = "No valid access token. Open the link that catt-web printed in the terminal, or scan its QR code.";
+
+async function api(path, body) {
+  const headers = { "X-Token": TOKEN };
+  const opts = body === undefined ? { headers } :
+    { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  const r = await fetch("/api/" + path, opts);
+  if (r.status === 403) throw new Error(NO_TOKEN_MSG);
+  const j = await r.json().catch(() => ({ error: r.status + " " + r.statusText }));
+  if (!r.ok || j.error) throw new Error(j.error || r.statusText);
+  return j;
+}
+let toastTimer;
+function toast(msg, err = false) {
+  const t = $("#toast");
+  t.textContent = msg; t.className = err ? "err" : ""; t.style.display = "block";
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.style.display = "none"), err ? 6000 : 2500);
+}
+async function act(btn, fn, okMsg) {
+  if (btn) btn.disabled = true;
+  try { const r = await fn(); if (okMsg) toast(okMsg); poll(); return r; }
+  catch (e) { toast(e.message, true); }
+  finally { if (btn) btn.disabled = false; }
+}
+function fmt(sec) {
+  if (sec == null || isNaN(sec)) return "0:00";
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s).padStart(2, "0");
+}
+const fmtSize = (b) => b > 2 ** 30 ? (b / 2 ** 30).toFixed(1) + " GB" : b > 2 ** 20 ? (b / 2 ** 20).toFixed(0) + " MB" : (b / 1024).toFixed(0) + " KB";
+const control = (action, value) => api("control", { action, value });
+
+// ------------------------------------------------------------ status
+let S = null, seeking = false, volDrag = false, sessionProbe = { path: null, data: null };
+
+async function poll() {
+  try { S = await api("status"); render(); }
+  catch (e) {
+    $("#dot").classList.remove("on");
+    if (e.message === NO_TOKEN_MSG) { $("#errText").textContent = NO_TOKEN_MSG; $("#errBanner").classList.add("show"); }
+  }
+}
+function render() {
+  const dev = S.device, m = S.media || {};
+  $("#dot").classList.toggle("on", !!(dev && dev.connected));
+  const sel = $("#devices");
+  if (dev && ![...sel.options].some((o) => o.value === dev.ip)) {
+    sel.add(new Option(dev.name + " (" + dev.ip + ")", dev.ip));
+  }
+  if (dev) sel.value = dev.ip;
+  else if (S.connecting) sel.options[0].text = "Connecting...";
+  else sel.options[0].text = "No device";
+
+  const onThisComputer = ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname);
+  $("#phoneBtn").style.display = onThisComputer && S.phone_url && S.qr ? "" : "none";
+  if (S.phone_url && $("#phoneLink").textContent !== S.phone_url) {
+    $("#phoneLink").textContent = S.phone_url; $("#phoneLink").href = S.phone_url;
+  }
+
+  const errs = [S.last_error, !dev && S.device_error].filter(Boolean);
+  $("#errText").textContent = errs.join(" · ");
+  $("#errBanner").classList.toggle("show", errs.length > 0);
+
+  const ro = S.resume_offer;
+  $("#resumeBanner").classList.toggle("show", !!ro);
+  if (ro) $("#resumeText").textContent = `Resume “${ro.title}” at ${fmt(ro.position)}` + (S.woke_at ? " (laptop woke from sleep)" : "");
+
+  const state = m.state || "UNKNOWN";
+  const active = ["PLAYING", "PAUSED", "BUFFERING"].includes(state);
+  $("#npTitle").textContent = active ? (m.title || (S.app && S.app.name) || "Playing") :
+    (S.app && S.app.name && S.app.name !== "Backdrop" ? S.app.name : "Nothing playing");
+  $("#npState").textContent = state;
+  $("#npState").className = "badge" + (state === "PLAYING" ? " play" : "");
+  $("#npApp").textContent = dev ? `${dev.name} · ${dev.model || ""}` + (S.app && S.app.name ? " · " + S.app.name : "") : "";
+  $("#bToggle").textContent = state === "PLAYING" || state === "BUFFERING" ? "❚❚" : "▶";
+  if (!seeking) {
+    $("#seek").max = Math.floor(m.duration || 0);
+    $("#seek").value = Math.floor(m.time || 0);
+  }
+  $("#tCur").textContent = fmt(seeking ? +$("#seek").value : m.time);
+  $("#tDur").textContent = fmt(m.duration);
+  if (S.volume && !volDrag) { $("#vol").value = S.volume.level; $("#volVal").textContent = S.volume.level; }
+  $("#bMute").textContent = S.volume && S.volume.muted ? "Unmute" : "Mute";
+  $("#npSleep").textContent = S.inhibit ? "Sleep is blocked while this file casts." :
+    (S.ours ? "Sleep is not blocked (paused for a long time)." : "");
+  renderSessionSubs();
+  renderJob();
+  $("#ytState").textContent = S.app && S.app.youtube ? "YouTube app is active. Queue commands work." :
+    "The YouTube queue works only while the YouTube app plays on the TV.";
+}
+
+async function renderSessionSubs() {
+  const box = $("#npSubs");
+  const sess = S.session;
+  if (!S.ours || !sess) { box.disabled = true; box.innerHTML = '<option value="">Off</option>'; sessionProbe.path = null; return; }
+  const src = sess.origin || sess.path;
+  if (sessionProbe.path !== src) {
+    sessionProbe = { path: src, data: null };
+    try { sessionProbe.data = await api("probe?path=" + encodeURIComponent(src)); } catch (e) { return; }
+    box.innerHTML = subsOptions(sessionProbe.data, "Off");
+  }
+  box.disabled = false;
+  if (document.activeElement !== box) box.value = subsValue(sess.subs);
+}
+function subsOptions(p, noneLabel) {
+  let html = `<option value="">${noneLabel}</option>`;
+  for (const t of p.subtitles) {
+    const label = `Track ${t.track}: ${t.lang || "?"}${t.title ? " – " + t.title : ""} (${t.codec})${t.forced ? " forced" : ""}`;
+    html += `<option value="track:${t.track}" ${t.text ? "" : "disabled"}>${esc(label)}${t.text ? "" : " – not supported"}</option>`;
+  }
+  for (const f of p.external_subs) html += `<option value="file:${esc(f)}">File: ${esc(f.split("/").pop())}</option>`;
+  return html;
+}
+const subsValue = (s) => !s ? "" : s.file ? "file:" + s.file : "track:" + s.track;
+const subsParse = (v) => !v ? null : v.startsWith("file:") ? { file: v.slice(5) } : { track: +v.slice(6) };
+
+// ------------------------------------------------------------ player controls
+$("#bToggle").onclick = (e) => act(e.target, () => control("toggle"));
+$("#bm30").onclick = (e) => act(e.target, () => control("rewind", 30));
+$("#bm10").onclick = (e) => act(e.target, () => control("rewind", 10));
+$("#bp10").onclick = (e) => act(e.target, () => control("ffwd", 10));
+$("#bp30").onclick = (e) => act(e.target, () => control("ffwd", 30));
+$("#bStop").onclick = (e) => act(e.target, () => control("stop"));
+$("#bSkip").onclick = (e) => act(e.target, () => control("skip"));
+$("#bSeekTo").onclick = (e) => { const v = $("#seekTo").value.trim(); if (v) act(e.target, () => control("seek", v)); };
+$("#seekTo").onkeydown = (e) => { if (e.key === "Enter") $("#bSeekTo").click(); };
+$("#seek").oninput = () => { seeking = true; $("#tCur").textContent = fmt(+$("#seek").value); };
+$("#seek").onchange = async () => { await act(null, () => control("seek", +$("#seek").value)); seeking = false; };
+$("#bMute").onclick = (e) => act(e.target, () => control("mute"));
+let volTimer;
+$("#vol").oninput = () => {
+  volDrag = true; $("#volVal").textContent = $("#vol").value;
+  clearTimeout(volTimer);
+  volTimer = setTimeout(async () => { await act(null, () => control("volume", +$("#vol").value)); volDrag = false; }, 150);
+};
+$("#npSubs").onchange = (e) => act(e.target, () => api("subs", { subs: subsParse(e.target.value) }),
+  e.target.value ? "Reloading with subtitles..." : "Subtitles off");
+$("#errClose").onclick = () => act(null, () => api("clear_error", {}));
+$("#resumeBtn").onclick = (e) => act(e.target, () => api("resume", {}), "Resuming...");
+$("#resumeDismiss").onclick = () => act(null, () => api("resume", { dismiss: true }));
+
+document.addEventListener("keydown", (e) => {
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = { " ": () => control("toggle"), ArrowLeft: () => control("rewind", 10), ArrowRight: () => control("ffwd", 10),
+    ArrowUp: () => control("volumeup", 5), ArrowDown: () => control("volumedown", 5), m: () => control("mute") }[e.key];
+  if (k) { e.preventDefault(); act(null, k); }
+});
+
+// ------------------------------------------------------------ phone QR
+$("#phoneBtn").onclick = () => {
+  const card = $("#phoneCard"), show = card.style.display === "none";
+  // New image each time, in case the Wi-Fi IP changed. An <img> cannot send headers, so the token goes in the query.
+  if (show) $("#qrImg").src = "/api/qr.svg?t=" + encodeURIComponent(TOKEN) + "&ts=" + Date.now();
+  card.style.display = show ? "block" : "none";
+};
+$("#phoneClose").onclick = () => ($("#phoneCard").style.display = "none");
+
+// ------------------------------------------------------------ devices
+$("#scan").onclick = (e) => act(e.target, async () => {
+  const { devices } = await api("devices");
+  const sel = $("#devices"); const cur = sel.value;
+  sel.innerHTML = '<option value="">Pick a device</option>';
+  for (const d of devices) sel.add(new Option(`${d.name} (${d.ip})`, d.ip));
+  sel.value = cur; toast(devices.length + " device(s) found");
+});
+$("#devices").onchange = (e) => { if (e.target.value) act(e.target, () => api("device", { ip: e.target.value }), "Connected"); };
+
+// ------------------------------------------------------------ tabs
+document.querySelectorAll("nav.tabs button").forEach((b) => b.onclick = () => {
+  document.querySelectorAll("nav.tabs button").forEach((x) => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.id === "tab-" + b.dataset.tab));
+  try { localStorage.setItem("cattweb.tab", b.dataset.tab); } catch (e) {}
+});
+try { const t = localStorage.getItem("cattweb.tab"); if (t) document.querySelector(`nav.tabs button[data-tab="${t}"]`)?.click(); } catch (e) {}
+
+// ------------------------------------------------------------ files
+let dir = null, selected = null, probeData = null;
+async function browse(path) {
+  try {
+    dir = await api("browse" + (path ? "?path=" + encodeURIComponent(path) : ""));
+    try { localStorage.setItem("cattweb.dir", dir.path); } catch (e) {}
+  } catch (e) { toast(e.message, true); if (path) return browse(null); return; }
+  $("#fPath").textContent = dir.path;
+  $("#fUp").disabled = !dir.parent;
+  const ul = $("#fList"); ul.innerHTML = "";
+  if (!dir.entries.length) ul.innerHTML = '<li class="muted">No folders or media files here.</li>';
+  for (const en of dir.entries) {
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="kind">${en.type === "dir" ? "folder" : en.type}</span><span class="name">${esc(en.name)}</span>` +
+      (en.size ? `<span class="size">${fmtSize(en.size)}</span>` : "");
+    if (selected && en.path === selected) li.classList.add("sel");
+    li.onclick = () => en.type === "dir" ? browse(en.path) : pick(en);
+    ul.appendChild(li);
+  }
+}
+async function pick(en) {
+  if (en.type === "subs") {
+    if (!probeData) return toast("Select a video first, then a subtitle file.", true);
+    const box = $("#dSubs"), v = "file:" + en.path;
+    if (![...box.options].some((o) => o.value === v)) box.add(new Option("File: " + en.name, v));
+    box.value = v; return toast("Subtitles set: " + en.name);
+  }
+  selected = en.path;
+  document.querySelectorAll("#fList li").forEach((li) => li.classList.toggle("sel", li.querySelector(".name").textContent === en.name));
+  $("#detail").style.display = "block";
+  $("#dName").textContent = en.name; $("#dInfo").textContent = "Reading file..."; $("#dWarn").innerHTML = "";
+  $("#dConvert").style.display = "none"; $("#bCastConv").style.display = "none";
+  try { probeData = await api("probe?path=" + encodeURIComponent(en.path)); }
+  catch (e) { $("#dInfo").textContent = e.message; probeData = null; return; }
+  const p = probeData, v = p.video, a = p.audio[0];
+  $("#dInfo").textContent = [fmt(p.duration), fmtSize(p.size), p.format,
+    v && `${v.codec_name} ${v.width}×${v.height} ${v.pix_fmt || ""}`,
+    a && `${a.codec} ${a.channels} ch`, p.subtitles.length && p.subtitles.length + " subtitle tracks"].filter(Boolean).join(" · ");
+  $("#dWarn").innerHTML = p.warnings.map((w) => `<div class="warn">${esc(w)}</div>`).join("");
+  $("#dConvert").style.display = p.convert.needed ? "block" : "none";
+  $("#dSubs").innerHTML = subsOptions(p, "None");
+  const def = p.subtitles.find((t) => t.text && t.forced) || null;
+  if (def) $("#dSubs").value = "track:" + def.track;
+  renderJob();
+}
+function jobFor(path) { return S && S.jobs.filter((j) => j.source === path).sort((a, b) => b.started - a.started)[0]; }
+function renderJob() {
+  if (!probeData) return;
+  const j = jobFor(probeData.path);
+  const conv = probeData.converted || (j && j.state === "done" ? j.output : null);
+  $("#bCastConv").style.display = conv ? "inline-block" : "none";
+  $("#bCastConv").dataset.path = conv || "";
+  const running = j && j.state === "running";
+  $("#bConvert").disabled = !!running;
+  $("#bCancel").style.display = running ? "inline-block" : "none";
+  $("#cBar").style.display = running ? "block" : "none";
+  if (running) $("#cBar > div").style.width = (j.progress * 100).toFixed(1) + "%";
+  $("#cText").textContent = !j ? (conv ? "A converted copy exists in /tmp/catt-web." : "") :
+    running ? `Converting... ${(j.progress * 100).toFixed(0)}%` :
+    j.state === "done" ? "Done: " + j.output.split("/").pop() : j.state === "failed" ? "Failed: " + j.error : "Cancelled";
+}
+$("#fUp").onclick = () => dir && dir.parent && browse(dir.parent);
+$("#fHome").onclick = () => browse(null);
+$("#fConv").onclick = () => browse(dir ? dir.converted_dir : "/tmp/catt-web");
+$("#fRefresh").onclick = () => browse(dir && dir.path);
+$("#bConvert").onclick = (e) => probeData && act(e.target, () => api("convert", { path: probeData.path }), "Conversion started");
+$("#bCancel").onclick = (e) => { const j = probeData && jobFor(probeData.path); if (j) act(e.target, () => api("convert_cancel", { id: j.id })); };
+function castBody(path) {
+  // Embedded tracks always come from the file that was probed (the original, also for a converted copy).
+  const subs = subsParse($("#dSubs").value);
+  const body = { path, origin: probeData.path, subs: subs && subs.track !== undefined ? { ...subs, source: probeData.path } : subs };
+  const st = $("#dStart").value.trim(); if (st) body.start = st;
+  return body;
+}
+$("#bCast").onclick = (e) => probeData && act(e.target, () => api("cast", castBody(probeData.path)), "Casting...");
+$("#bCastConv").onclick = (e) => {
+  const path = e.target.dataset.path;
+  if (path) act(e.target, () => api("cast", castBody(path)), "Casting converted file...");
+};
+
+// ------------------------------------------------------------ URL / web / YouTube / info
+$("#bUrl").onclick = (e) => { const u = $("#uUrl").value.trim(); if (u) act(e.target, () => api("cast_url", { url: u, force_default: $("#uDefault").checked }), "Casting..."); };
+$("#bSite").onclick = (e) => { const u = $("#sUrl").value.trim(); if (u) act(e.target, () => api("cast_site", { url: u }), "Showing website..."); };
+const yt = (action) => (e) => act(e.target, () => api("youtube", { action, url: $("#yUrl").value.trim() }), "Done");
+$("#yAdd").onclick = yt("add"); $("#yNext").onclick = yt("add_next"); $("#yRemove").onclick = yt("remove"); $("#yClear").onclick = yt("clear");
+$("#iRefresh").onclick = (e) => act(e.target, async () => { $("#iOut").textContent = JSON.stringify(await api("info"), null, 2); });
+async function showSaved() {
+  try { const { saved } = await api("saved");
+    $("#iSaved").textContent = saved ? `Saved: ${saved.title || (saved.data && saved.data.title) || saved.kind} at ${fmt(saved.position ?? (saved.data && saved.data.current_time))}` : "Nothing saved.";
+  } catch (e) {}
+}
+$("#iSave").onclick = (e) => act(e.target, async () => { await api("save", {}); showSaved(); }, "State saved");
+$("#iRestore").onclick = (e) => act(e.target, () => api("restore", {}), "Restoring...");
+
+// ------------------------------------------------------------ start
+let startDir = null; try { startDir = localStorage.getItem("cattweb.dir"); } catch (e) {}
+browse(startDir); showSaved(); poll(); setInterval(poll, 1000);
+</script>
+</body>
+</html>

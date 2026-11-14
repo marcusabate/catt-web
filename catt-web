@@ -1,0 +1,9 @@
+#!/bin/sh
+# Launch catt-web with a Python that has catt and pychromecast.
+# Order: $CATT_WEB_PYTHON, ./.venv next to this script, the catt pipx venv.
+DIR="$(dirname "$(readlink -f "$0")")"
+for PY in "$CATT_WEB_PYTHON" "$DIR/.venv/bin/python" "$HOME/.local/share/pipx/venvs/catt/bin/python"; do
+    [ -n "$PY" ] && [ -x "$PY" ] && exec "$PY" "$DIR/catt_web.py" "$@"
+done
+echo "catt-web: no Python with catt found. Run 'pipx install catt', or create .venv from requirements.txt." >&2
+exit 1
